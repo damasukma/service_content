@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "/;model";
+
+package model;
+
+import "google/protobuf/timestamp.proto";
+
+message ArticleParam {
+    string author = 2;
+    string title = 3;
+    string body = 4;
+}
+message ArticleDestroyParam {
+    int32 id = 1;
+}
+
+message Article {
+    int32 id = 1;
+    string author = 2;
+    string title = 3;
+    string body = 4;
+    google.protobuf.Timestamp created_at = 5;
+ }
+
+message ListArticleParam {}
+
+message Response {
+    int32 status = 1;
+    string message = 2;
+    repeated Article data = 3;
+}
+
+service AddService {
+    rpc Article(ArticleParam) returns (Response);
+    rpc Delete(ArticleDestroyParam) returns (Response);
+    rpc ListArticle(ListArticleParam) returns (Response);
+}

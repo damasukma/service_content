@@ -1,0 +1,91 @@
+version: "3"
+services:
+  web:
+    container_name: service_content_web
+    build:
+      context: ./
+      # dockerfile: Dockerfile
+      target: builder
+    volumes:
+     - ./:/app/
+    expose: 
+     - "8080"
+    labels:
+     - "traefik.enable=true"
+     - "traefik.http.routers.account.rule=Host(`news.test`) && PathPrefix(`/`)"
+    environment:
+      - ENV=dev
+    command: reflex -r "\.go$$" -s -- sh -c "go run web/main.go"   
+  
+    depends_on: 
+      - redis
+  
+  service_cmd:
+    container_name: service_content_command
+    build: 
+      context: ./
+      target: builder
+    volumes: 
+     - ./:/app/
+    expose:
+      - "4040"
+    depends_on: 
+      - redis
+  
+  nats:
+    image: nats
+    ports: 
+      - "8222:8222"
+      - "6222:6222"
+      - "4222:4222"   
+    networks: 
+      - nats   
+
+  reverse-proxy:
+    image: traefik:v2.2
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker"
+      - "--providers.docker.exposedByDefault=false"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock    
+
+  redis:
+    image: redis:3.0.7-alpine
+    container_name: redis_service_content
+    ports: 
+     - 127.0.0.1:6379:6379
+    networks:
+     - default
+
+  # es:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+  #   container_name: es_service_content
+  #   environment:
+  #     - node.name=es01
+  #     - cluster.name=es-docker-cluster
+  #     # - discovery.seed_hosts=es02,es03
+  #     - cluster.initial_master_nodes=es_service_content
+  #     - bootstrap.memory_lock=true
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   volumes:
+  #     - ./esdata:/usr/share/elasticsearch/data
+  #   ports:
+  #     - 9200:9200
+  #   networks:
+  #     - elastic
+# volumes:
+#   esdata:
+networks: 
+  # elastic:
+  #   driver: bridge
+  nats:
+    name: nats
+    
